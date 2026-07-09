@@ -1,0 +1,9 @@
+[project]
+name = "shaktiscale-ai-backend"
+version = "0.1.0"
+description = "ShaktiScale AI — FastAPI backend"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

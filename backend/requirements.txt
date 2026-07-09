@@ -1,0 +1,16 @@
+# ShaktiScale AI — Backend dependencies
+
+# Web framework
+fastapi
+uvicorn[standard]
+
+# Config & validation
+pydantic
+pydantic-settings
+
+# AI (used in a later milestone)
+google-generativeai
+
+# Testing
+pytest
+httpx

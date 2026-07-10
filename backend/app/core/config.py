@@ -14,8 +14,10 @@ class Settings(BaseSettings):
     # Everything under /api/v1 lives behind this prefix.
     api_v1_prefix: str = "/api/v1"
 
-    # Gemini lands in a later milestone; the key is loaded now so config is stable.
-    gemini_api_key: str = ""
+    # If unset, AI endpoints degrade to their deterministic fallback — never a 500.
+    openrouter_api_key: str = ""
+    openrouter_model: str = "openai/gpt-4o-mini"
+    openrouter_timeout_seconds: int = 15
 
     log_level: str = "INFO"
 

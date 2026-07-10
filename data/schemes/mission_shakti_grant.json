@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0",
+  "scheme_id": "mission_shakti_grant",
+  "scheme_name": "Mission Shakti Enterprise Grant",
+  "grant_type": "Non-repayable enterprise grant up to Rs 25,000",
+  "version": "1.0",
+  "last_verified": "2026-07-09",
+  "official_source": "Mission Shakti, Govt. of Odisha",
+  "source_url": "https://missionshakti.odisha.gov.in",
+  "source_label": "Mission Shakti, Govt. of Odisha",
+  "criteria": [
+    {
+      "id": "gender_female",
+      "category": "grant",
+      "rule_text": "Applicant must be a woman.",
+      "field": "gender",
+      "operator": "equals",
+      "value": "female",
+      "plain": "This scheme is exclusively for women.",
+      "fixable": false
+    },
+    {
+      "id": "odisha_resident",
+      "category": "grant",
+      "rule_text": "Applicant must be a permanent resident of Odisha.",
+      "field": "state",
+      "operator": "equals",
+      "value": "Odisha",
+      "plain": "You must be a permanent resident of Odisha.",
+      "fixable": false
+    },
+    {
+      "id": "shg_member",
+      "category": "grant",
+      "rule_text": "Applicant must be a member of a Self-Help Group.",
+      "field": "is_shg_member",
+      "operator": "equals",
+      "value": true,
+      "plain": "You must belong to a Mission Shakti SHG.",
+      "fixable": true,
+      "fix_action": "Join a Mission Shakti SHG in your ward/village (10-20 women)."
+    },
+    {
+      "id": "shg_age_6m",
+      "category": "grant",
+      "rule_text": "SHG must be active for 6+ months for bank loan linkage.",
+      "field": "shg_months_active",
+      "operator": "greater_or_equal",
+      "value": 6,
+      "plain": "Your SHG needs to be at least 6 months old.",
+      "fixable": true,
+      "fix_action": "Continue SHG membership until it reaches 6 months.",
+      "fix_eta_from": "shg_months_active",
+      "meanwhile": "Prepare your business documents while you wait."
+    },
+    {
+      "id": "has_aadhaar",
+      "category": "documentation",
+      "rule_text": "Applicant must provide an Aadhaar card.",
+      "field": "documents",
+      "operator": "contains",
+      "value": "aadhaar",
+      "plain": "You need your Aadhaar card on file.",
+      "fixable": true,
+      "fix_action": "Add your Aadhaar card to your documents."
+    },
+    {
+      "id": "has_shg_certificate",
+      "category": "documentation",
+      "rule_text": "Applicant must provide an SHG membership certificate.",
+      "field": "documents",
+      "operator": "contains",
+      "value": "shg_certificate",
+      "plain": "You need your SHG membership certificate on file.",
+      "fixable": true,
+      "fix_action": "Get an SHG membership certificate from your group and add it to your documents."
+    },
+    {
+      "id": "has_business_quotation",
+      "category": "documentation",
+      "rule_text": "Applicant must provide a business quotation or estimate.",
+      "field": "documents",
+      "operator": "contains",
+      "value": "business_quotation",
+      "plain": "You need a quotation or cost estimate for your business.",
+      "fixable": true,
+      "fix_action": "Get a written quotation for your business setup and add it to your documents."
+    },
+    {
+      "id": "has_monthly_revenue",
+      "category": "financial_documentation",
+      "rule_text": "Applicant must provide an estimate of monthly revenue.",
+      "field": "monthly_revenue",
+      "operator": "exists",
+      "value": null,
+      "plain": "You need to provide your monthly revenue estimate.",
+      "fixable": true,
+      "fix_action": "Add your monthly revenue estimate to your profile."
+    },
+    {
+      "id": "has_monthly_expenses",
+      "category": "financial_documentation",
+      "rule_text": "Applicant must provide an estimate of monthly expenses.",
+      "field": "monthly_expenses",
+      "operator": "exists",
+      "value": null,
+      "plain": "You need to provide your monthly expenses estimate.",
+      "fixable": true,
+      "fix_action": "Add your monthly expenses estimate to your profile."
+    }
+  ]
+}

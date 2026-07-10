@@ -14,6 +14,11 @@ const config: Config = {
         accent: {
           DEFAULT: "#f59e0b",
         },
+        // Muted sage, not checkout-green — "met" should feel calm, not celebratory-loud.
+        success: {
+          DEFAULT: "#4d7c5f",
+          light: "#e8f0ea",
+        },
       },
     },
   },

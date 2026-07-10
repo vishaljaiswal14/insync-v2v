@@ -8,9 +8,8 @@ uvicorn[standard]
 pydantic
 pydantic-settings
 
-# AI (used in a later milestone)
-google-generativeai
+# AI (OpenRouter) — plain HTTP via httpx, no provider SDK needed
+httpx
 
 # Testing
 pytest
-httpx

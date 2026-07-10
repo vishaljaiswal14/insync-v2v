@@ -1,54 +1,56 @@
 import Link from "next/link";
 
+import ActionCard from "@/components/ActionCard";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+import TryDemoButton from "@/components/TryDemoButton";
+
 export default function LandingPage() {
   return (
-    <div className="mx-auto max-w-6xl px-6">
-      {/* Hero */}
-      <section className="flex flex-col items-center py-20 text-center md:py-28">
-        <span className="mb-4 rounded-full bg-brand/10 px-4 py-1 text-sm font-medium text-brand">
-          For women entrepreneurs
-        </span>
+    <div className="flex min-h-screen flex-col">
+      <Header />
 
-        <h1 className="max-w-3xl text-4xl font-bold leading-tight text-brand-dark md:text-5xl">
-          Grow your business with AI that actually knows your options.
-        </h1>
+      <main className="flex-1">
+        <div className="mx-auto max-w-6xl px-6">
+          <section className="flex flex-col items-center py-20 text-center md:py-28">
+            <span className="mb-4 rounded-full bg-brand/10 px-4 py-1 text-sm font-medium text-brand">
+              For women entrepreneurs
+            </span>
 
-        <p className="mt-5 max-w-2xl text-lg text-gray-600">
-          ShaktiScale AI assesses where your business stands, finds the government
-          schemes you qualify for, and builds a step-by-step roadmap to scale.
-        </p>
+            <h1 className="max-w-3xl text-4xl font-bold leading-tight text-brand-dark md:text-5xl">
+              From &ldquo;not eligible&rdquo; to &ldquo;application-ready.&rdquo;
+            </h1>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <Link
-            href="/dashboard"
-            className="rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark"
-          >
-            Open dashboard
-          </Link>
-          <a
-            href="#how-it-works"
-            className="rounded-lg border border-gray-200 px-6 py-3 font-semibold text-gray-700 transition hover:border-brand hover:text-brand"
-          >
-            How it works
-          </a>
+            <p className="mt-5 max-w-2xl text-lg text-gray-600">
+              Government portals tell you how to apply. ShaktiScale checks your situation
+              against verified government scheme rules, shows you exactly where you stand, and
+              builds a personal, dated path to becoming eligible.
+            </p>
+
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Link
+                href="/assess"
+                className="rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark"
+              >
+                Check My Readiness
+              </Link>
+              <TryDemoButton />
+            </div>
+
+            <p className="mt-6 text-xs text-gray-400">
+              No login. Nothing is saved. This is a readiness guide, not a funding decision.
+            </p>
+          </section>
+
+          <section id="how-it-works" className="grid gap-6 pb-24 md:grid-cols-3">
+            {FEATURES.map((feature) => (
+              <ActionCard key={feature.title} {...feature} />
+            ))}
+          </section>
         </div>
-      </section>
+      </main>
 
-      {/* How it works */}
-      <section id="how-it-works" className="grid gap-6 pb-24 md:grid-cols-3">
-        {FEATURES.map((feature) => (
-          <div
-            key={feature.title}
-            className="rounded-2xl border border-gray-100 p-6 shadow-sm"
-          >
-            <div className="mb-3 text-2xl">{feature.emoji}</div>
-            <h3 className="mb-2 text-lg font-semibold text-brand-dark">
-              {feature.title}
-            </h3>
-            <p className="text-sm text-gray-600">{feature.description}</p>
-          </div>
-        ))}
-      </section>
+      <Footer />
     </div>
   );
 }
@@ -56,20 +58,20 @@ export default function LandingPage() {
 const FEATURES = [
   {
     emoji: "📊",
-    title: "Business assessment",
+    title: "Where you stand",
     description:
-      "Answer a few questions and get a clear read on your business's growth stage.",
-  },
-  {
-    emoji: "🏛️",
-    title: "Scheme discovery",
-    description:
-      "See the government schemes you're eligible for, matched to your profile.",
+      "Your situation checked against verified government scheme rules — every result cites the actual guideline.",
   },
   {
     emoji: "🗺️",
-    title: "Growth roadmap",
+    title: "Your dated path",
     description:
-      "Get a practical, prioritized plan for the next steps to scale up.",
+      "Not just what's missing — exactly what to do next, and when you'll be ready, computed from your own details.",
+  },
+  {
+    emoji: "✓",
+    title: "Nothing hidden",
+    description:
+      "Every score is a plain count of rules met, never a prediction. You can see the source behind every fact.",
   },
 ];

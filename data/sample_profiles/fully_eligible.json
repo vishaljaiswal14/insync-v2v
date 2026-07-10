@@ -1,0 +1,12 @@
+{
+  "gender": "female",
+  "state": "Odisha",
+  "district": "Khordha",
+  "business_type": "grocery",
+  "is_shg_member": true,
+  "shg_months_active": 12,
+  "category": "general",
+  "monthly_revenue": 15000,
+  "monthly_expenses": 9000,
+  "documents": ["aadhaar", "shg_certificate", "business_quotation"]
+}

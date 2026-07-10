@@ -1,11 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
 
-import ExplainDisclosure from "./ExplainDisclosure";
-import SourceChip from "./SourceChip";
-import type { CriterionResult, RoadmapStep } from "@/lib/types";
+import RuleDossier from "./RuleDossier";
+import { useAssessment } from "@/context/AssessmentContext";
+import { roadmapStepFor } from "@/lib/ledger";
+import type { CriterionResult, Profile, RoadmapStep } from "@/lib/types";
 
 // Two live states, by design: every step here is already unmet-but-fixable
 // (structural blockers live in BlockersDisclosure, not here). Time-gated
@@ -16,6 +16,9 @@ import type { CriterionResult, RoadmapStep } from "@/lib/types";
 export default function TimelineNode({
   step,
   criterion,
+  allCriteria = [],
+  roadmap = [],
+  profile = null,
   completing,
   submitting,
   delay,
@@ -23,13 +26,17 @@ export default function TimelineNode({
 }: {
   step: RoadmapStep;
   criterion: CriterionResult | null;
+  allCriteria?: CriterionResult[];
+  roadmap?: RoadmapStep[];
+  profile?: Profile | null;
   completing: boolean;
   submitting: boolean;
   delay: number;
   onMarkDone?: () => void;
 }) {
-  const [citationOpen, setCitationOpen] = useState(false);
+  const { openLedger } = useAssessment();
   const isTimeGated = step.eligible_on !== null;
+  const roadmapStep = criterion ? roadmapStepFor(criterion, roadmap) : null;
 
   return (
     <motion.div
@@ -57,24 +64,22 @@ export default function TimelineNode({
         <p className="mt-1 text-xs text-ink-muted">
           {step.reason}
           {criterion && (
-            <button
-              type="button"
-              onClick={() => setCitationOpen((v) => !v)}
-              className="ml-2 font-mono text-[11px] tracking-tight text-ink-faint hover:text-brand"
-            >
+            <span className="ml-2 font-mono text-[11px] tracking-tight text-ink-faint">
               [{formatCitationCode(criterion.id)}]
-            </button>
+            </span>
           )}
         </p>
 
-        {citationOpen && criterion && (
-          <div className="mt-2 space-y-2 border-l-2 border-line pl-3">
-            <p className="text-sm italic text-ink-muted">&ldquo;{criterion.rule_text}&rdquo;</p>
-            <SourceChip label={criterion.source} url={criterion.source_url} />
-          </div>
+        {isTimeGated && criterion && (
+          <button
+            type="button"
+            onClick={() => openLedger([criterion.id])}
+            className="mt-3 block font-serif text-2xl font-semibold text-accent-dark hover:underline text-left"
+          >
+            Eligible on {formatDate(step.eligible_on!)}
+          </button>
         )}
-
-        {isTimeGated && (
+        {isTimeGated && !criterion && (
           <p className="mt-3 font-serif text-2xl font-semibold text-accent-dark">
             Eligible on {formatDate(step.eligible_on!)}
           </p>
@@ -84,9 +89,20 @@ export default function TimelineNode({
           <p className="mt-2 border-l-2 border-line pl-3 text-xs text-ink-muted">Meanwhile: {step.meanwhile}</p>
         )}
 
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <div className="flex-1">{criterion && <ExplainDisclosure criterion={criterion} compact />}</div>
-          {!isTimeGated && onMarkDone && (
+        {criterion && (
+          <div className="mt-3 border-t border-line pt-3">
+            <RuleDossier
+              criterion={criterion}
+              allCriteria={allCriteria}
+              roadmapStep={roadmapStep}
+              profile={profile}
+              compact
+            />
+          </div>
+        )}
+
+        {!isTimeGated && onMarkDone && (
+          <div className="mt-3 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onMarkDone}
@@ -95,8 +111,8 @@ export default function TimelineNode({
             >
               {submitting || completing ? "Updating…" : "Mark done"}
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );

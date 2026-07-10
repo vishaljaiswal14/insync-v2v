@@ -4,13 +4,23 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 
 import CriterionCard from "./CriterionCard";
-import type { CriterionResult } from "@/lib/types";
+import type { CriterionResult, Profile, RoadmapStep } from "@/lib/types";
 
 // Zone C of the Roadmap story: "why am I currently ineligible, and what
 // can't change." Stated calmly, collapsed by default so it never competes
 // with the timeline for attention — but always present, never hidden
 // entirely, because a blocker is a fact she deserves to see, not a dead end.
-export default function BlockersDisclosure({ blockers }: { blockers: CriterionResult[] }) {
+export default function BlockersDisclosure({
+  blockers,
+  allCriteria = [],
+  roadmap = [],
+  profile = null,
+}: {
+  blockers: CriterionResult[];
+  allCriteria?: CriterionResult[];
+  roadmap?: RoadmapStep[];
+  profile?: Profile | null;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,7 +47,13 @@ export default function BlockersDisclosure({ blockers }: { blockers: CriterionRe
           >
             <div className="mt-3 space-y-3">
               {blockers.map((criterion) => (
-                <CriterionCard key={criterion.id} criterion={criterion} />
+                <CriterionCard
+                  key={criterion.id}
+                  criterion={criterion}
+                  allCriteria={allCriteria}
+                  roadmap={roadmap}
+                  profile={profile}
+                />
               ))}
             </div>
           </motion.div>

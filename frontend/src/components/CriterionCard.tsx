@@ -3,39 +3,33 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 
-import ExplainDisclosure from "./ExplainDisclosure";
+import RuleDossier from "./RuleDossier";
 import SourceChip from "./SourceChip";
-import type { CriterionResult } from "@/lib/types";
-
-// Three states, shape-coded (not just color-coded) for colorblind-safety:
-// met = filled check, fixable gap = open circle in accent amber, structural
-// blocker = a diamond in neutral slate — never red. A blocker is a fact
-// about her life, not a failure; styling it as an error would be dishonest.
-const STATUS = {
-  met: { icon: "✓", className: "border-success bg-success text-white" },
-  fixable: { icon: "○", className: "border-accent text-accent" },
-  blocker: { icon: "◆", className: "border-ink-faint text-ink-faint" },
-} as const;
-
-function statusFor(criterion: CriterionResult): keyof typeof STATUS {
-  if (criterion.met) return "met";
-  return criterion.fixable ? "fixable" : "blocker";
-}
+import { STATUS_GLYPH, statusForCriterion } from "@/lib/status";
+import { roadmapStepFor } from "@/lib/ledger";
+import type { CriterionResult, Profile, RoadmapStep } from "@/lib/types";
 
 export default function CriterionCard({
   criterion,
+  allCriteria = [],
+  roadmap = [],
+  profile = null,
   simulated = false,
   canSimulate = false,
   onToggleSimulate,
 }: {
   criterion: CriterionResult;
+  allCriteria?: CriterionResult[];
+  roadmap?: RoadmapStep[];
+  profile?: Profile | null;
   simulated?: boolean;
   canSimulate?: boolean;
   onToggleSimulate?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const status = statusFor(criterion);
-  const { icon, className } = STATUS[status];
+  const status = statusForCriterion(criterion);
+  const { icon, className } = STATUS_GLYPH[status];
+  const roadmapStep = roadmapStepFor(criterion, roadmap);
 
   return (
     <div className="rounded-xl border border-line bg-white p-4 shadow-card">
@@ -84,23 +78,17 @@ export default function CriterionCard({
                   </div>
                 </div>
 
-                {/* Right Column: Copilot Translation & Actions */}
+                {/* Right Column: Rule Dossier & Actions */}
                 <div className="space-y-3 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
-                      Copilot Explanation
-                    </span>
-                    <ExplainDisclosure criterion={criterion} compact />
-                  </div>
-                  
-                  {criterion.fixable && criterion.fix_action && (
-                    <div className="mt-2 rounded bg-amber-light/30 border border-amber-border/40 p-2.5">
-                      <span className="block text-[10px] font-bold uppercase tracking-wider text-amber">
-                        Action Required
-                      </span>
-                      <p className="text-xs font-medium text-ink mt-0.5">{criterion.fix_action}</p>
-                    </div>
-                  )}
+                  <RuleDossier
+                    criterion={criterion}
+                    allCriteria={allCriteria}
+                    roadmapStep={roadmapStep}
+                    profile={profile}
+                    compact
+                    hideRuleText
+                    hideCitation
+                  />
 
                   {canSimulate && onToggleSimulate && (
                     <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5">

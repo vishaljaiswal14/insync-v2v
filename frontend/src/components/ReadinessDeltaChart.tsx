@@ -24,7 +24,7 @@ export default function ReadinessDeltaChart({ points }: { points: ChartPoint[] }
       </p>
 
       <div className="mt-6 flex justify-center">
-        <svg viewBox="0 0 400 210" className="w-full max-w-lg h-auto overflow-visible select-none">
+        <svg viewBox="0 0 400 210" className="w-full max-w-lg h-auto select-none">
           {/* Y-axis gridlines & labels */}
           {[0, 0.25, 0.5, 0.75, 1].map((tick) => {
             const y = zeroY - tick * chartHeight;
@@ -81,7 +81,7 @@ export default function ReadinessDeltaChart({ points }: { points: ChartPoint[] }
                   className="fill-brand"
                   initial={{ height: 0, y: zeroY }}
                   animate={{ height: barHeight, y }}
-                  transition={{ type: "spring", stiffness: 70, damping: 15 }}
+                  transition={{ type: "spring", stiffness: 70, damping: 20 }}
                 />
 
                 {/* X-axis Label */}

@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import CriterionCard from "@/components/CriterionCard";
 import ReadinessDeltaChart from "@/components/ReadinessDeltaChart";
@@ -11,18 +11,13 @@ import ReadinessRing from "@/components/ReadinessRing";
 import TrustRail from "@/components/TrustRail";
 import { buttonVariants } from "@/components/ui/Button";
 import { useAssessment } from "@/context/AssessmentContext";
-import type { CriterionResult } from "@/lib/types";
+import { countFor, idsForCategory } from "@/lib/readiness";
 
 const CATEGORY_SECTIONS = [
   { key: "grant", title: "Grant Eligibility" },
   { key: "documentation", title: "Documentation" },
   { key: "financial_documentation", title: "Financial Documentation" },
 ] as const;
-
-function countFor(criteria: CriterionResult[], category: string) {
-  const matching = criteria.filter((c) => c.category === category);
-  return { met: matching.filter((c) => c.met).length, total: matching.length };
-}
 
 // Real, already-computed results stagger in on mount — never a fake spinner
 // for /evaluate, which returns in under a second. This is presentation
@@ -32,13 +27,14 @@ const item = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } };
 
 export default function ResultsPage() {
   const router = useRouter();
-  const { state } = useAssessment();
-  const [simulatedMetIds, setSimulatedMetIds] = useState<string[]>([]);
+  const { state, toggleSimulate, resetSimulate, openLedger } = useAssessment();
+  const simulatedMetIds = state.simulatedMetIds;
 
   useEffect(() => {
-    if (!state.result) router.replace("/assess");
-  }, [state.result, router]);
+    if (state.hydrated && !state.result) router.replace("/assess");
+  }, [state.hydrated, state.result, router]);
 
+  if (!state.hydrated) return null;
   if (!state.result) return null;
 
   const { result, profile } = state;
@@ -174,6 +170,68 @@ export default function ResultsPage() {
     }
   }
 
+  // Derived rule trace IDs for Decision Ledger linking
+  let primaryGapId: string | null = null;
+  if (blockers.length > 0) {
+    primaryGapId = blockers[0].id;
+  } else if (unmetCriteria.length > 0) {
+    const ageGap = unmetCriteria.find((c) => c.id === "shg_age_6m");
+    if (ageGap) {
+      primaryGapId = "shg_age_6m";
+    } else {
+      const shgMemberGap = unmetCriteria.find((c) => c.id === "shg_member");
+      if (shgMemberGap) {
+        primaryGapId = "shg_member";
+      } else {
+        primaryGapId = unmetCriteria[0].id;
+      }
+    }
+  }
+
+  let impactGapId: string | null = null;
+  if (blockers.length > 0) {
+    impactGapId = blockers[0].id;
+  } else if (unmetCriteria.length > 0) {
+    const shgMember = unmetCriteria.find((c) => c.id === "shg_member");
+    if (shgMember) {
+      impactGapId = "shg_member";
+    } else {
+      const ageGap = unmetCriteria.find((c) => c.id === "shg_age_6m");
+      if (ageGap) {
+        impactGapId = "shg_age_6m";
+      } else {
+        const missingDoc = unmetCriteria.find((c) => c.category === "documentation");
+        if (missingDoc) {
+          impactGapId = missingDoc.id;
+        } else {
+          impactGapId = unmetCriteria[0].id;
+        }
+      }
+    }
+  }
+
+  let quickWinId: string | null = null;
+  if (blockers.length > 0) {
+    quickWinId = blockers[0].id;
+  } else if (unmetCriteria.length > 0) {
+    const fin = unmetCriteria.find((c) => c.id === "has_monthly_revenue" || c.id === "has_monthly_expenses");
+    if (fin) {
+      quickWinId = fin.id;
+    } else {
+      const aadhaar = unmetCriteria.find((c) => c.id === "has_aadhaar");
+      if (aadhaar) {
+        quickWinId = "has_aadhaar";
+      } else {
+        const doc = unmetCriteria.find((c) => c.category === "documentation");
+        if (doc) {
+          quickWinId = doc.id;
+        } else {
+          quickWinId = unmetCriteria[0].id;
+        }
+      }
+    }
+  }
+
   const metCount = simulatedCriteria.filter((c) => c.met).length;
   const totalCount = simulatedCriteria.length;
 
@@ -211,7 +269,7 @@ export default function ResultsPage() {
             <span>⚠️ Interactive Mode: Simulating {simulatedMetIds.length} resolved criteria</span>
             <button
               type="button"
-              onClick={() => setSimulatedMetIds([])}
+              onClick={resetSimulate}
               className="underline hover:text-amber/80 transition-colors"
             >
               Reset Simulation
@@ -230,14 +288,18 @@ export default function ResultsPage() {
                 {statusText}
               </h2>
             </div>
-            <div className="rounded-lg bg-white border border-brand/10 px-4 py-2 text-right">
-              <span className="block font-mono text-[9px] uppercase tracking-wider text-ink-muted">
-                Rules Verified
+            <button
+              type="button"
+              onClick={() => openLedger(null)}
+              className="rounded-lg bg-white border border-brand/10 hover:border-brand/30 px-4 py-2 text-right transition cursor-pointer group text-left"
+            >
+              <span className="block font-mono text-[9px] uppercase tracking-wider text-ink-muted group-hover:text-brand">
+                Rules Verified 🔍
               </span>
               <span className="font-mono text-lg font-bold text-brand">
                 {metCount} <span className="text-ink-faint font-normal">/ {totalCount}</span>
               </span>
-            </div>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
@@ -252,9 +314,20 @@ export default function ResultsPage() {
               </div>
 
               <div>
-                <span className="block font-mono text-[9px] uppercase tracking-wider text-ink-muted">
-                  Primary Gap / Blocker
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="block font-mono text-[9px] uppercase tracking-wider text-ink-muted">
+                    Primary Gap / Blocker
+                  </span>
+                  {primaryGapId && (
+                    <button
+                      type="button"
+                      onClick={() => openLedger([primaryGapId])}
+                      className="font-mono text-[9px] text-brand hover:underline cursor-pointer font-bold"
+                    >
+                      [Trace to Rule]
+                    </button>
+                  )}
+                </div>
                 <p className="text-sm font-semibold text-ink mt-0.5">
                   {blockerText}
                 </p>
@@ -263,18 +336,40 @@ export default function ResultsPage() {
 
             <div className="space-y-4">
               <div>
-                <span className="block font-mono text-[9px] uppercase tracking-wider text-ink-muted">
-                  Highest Impact Action
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="block font-mono text-[9px] uppercase tracking-wider text-ink-muted">
+                    Highest Impact Action
+                  </span>
+                  {impactGapId && (
+                    <button
+                      type="button"
+                      onClick={() => openLedger([impactGapId])}
+                      className="font-mono text-[9px] text-brand hover:underline cursor-pointer font-bold"
+                    >
+                      [Trace to Rule]
+                    </button>
+                  )}
+                </div>
                 <p className="text-sm font-semibold text-accent-dark mt-0.5">
                   {impactText}
                 </p>
               </div>
 
               <div>
-                <span className="block font-mono text-[9px] uppercase tracking-wider text-ink-muted">
-                  Quickest Win (Instant)
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="block font-mono text-[9px] uppercase tracking-wider text-ink-muted">
+                    Quickest Win (Instant)
+                  </span>
+                  {quickWinId && (
+                    <button
+                      type="button"
+                      onClick={() => openLedger([quickWinId])}
+                      className="font-mono text-[9px] text-brand hover:underline cursor-pointer font-bold"
+                    >
+                      [Trace to Rule]
+                    </button>
+                  )}
+                </div>
                 <p className="text-sm font-semibold text-ink mt-0.5">
                   {quickWinText}
                 </p>
@@ -293,34 +388,50 @@ export default function ResultsPage() {
         </div>
 
         <div className="mt-8 grid grid-cols-3 gap-4">
-          <ReadinessRing
-            score={simulatedGrantReadiness}
-            metCount={grant.met}
-            totalCount={grant.total}
-            label="Grant"
-            tone="primary"
-          />
-          <ReadinessRing
-            score={simulatedDocReadiness}
-            metCount={documentation.met}
-            totalCount={documentation.total}
-            label="Documentation"
-            tone="secondary"
-          />
-          <ReadinessRing
-            score={simulatedFinReadiness}
-            metCount={financial.met}
-            totalCount={financial.total}
-            label="Financial Docs"
-            tone="secondary"
-          />
+          <button type="button" onClick={() => openLedger(idsForCategory(result.criteria, "grant"))} className="w-full text-left">
+            <ReadinessRing
+              score={simulatedGrantReadiness}
+              metCount={grant.met}
+              totalCount={grant.total}
+              label="Grant"
+              tone="primary"
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => openLedger(idsForCategory(result.criteria, "documentation"))}
+            className="w-full text-left"
+          >
+            <ReadinessRing
+              score={simulatedDocReadiness}
+              metCount={documentation.met}
+              totalCount={documentation.total}
+              label="Documentation"
+              tone="secondary"
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => openLedger(idsForCategory(result.criteria, "financial_documentation"))}
+            className="w-full text-left"
+          >
+            <ReadinessRing
+              score={simulatedFinReadiness}
+              metCount={financial.met}
+              totalCount={financial.total}
+              label="Financial Docs"
+              tone="secondary"
+            />
+          </button>
         </div>
+        <p className="mt-2 text-center text-[11px] text-ink-faint">Tap a ring to see the rules behind it</p>
 
-        {/* DPI Financial Health Analysis Widget */}
+        {/* Financial Snapshot — strictly the numbers she entered, no speculation
+            about what a reviewer or committee might conclude from them. */}
         {profile && typeof profile.monthly_revenue === "number" && typeof profile.monthly_expenses === "number" && (
           <div className="mt-8 rounded-xl border border-line bg-white p-5 shadow-card font-sans">
             <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-ink-faint">
-              DPI Financial Health Analysis
+              Financial Snapshot
             </span>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-line pb-3">
               <div>
@@ -341,11 +452,17 @@ export default function ResultsPage() {
             <div className="mt-3 text-xs leading-relaxed text-ink-muted">
               {profile.monthly_revenue - profile.monthly_expenses >= 0 ? (
                 <p>
-                  ✅ **Healthy Debt Capacity**: Your net surplus of ₹{(profile.monthly_revenue - profile.monthly_expenses).toLocaleString("en-IN")} is stable. Government reviewers will see that your business generates enough cash flow to safely leverage the ₹25,000 enterprise grant for capacity expansion.
+                  Your monthly revenue currently exceeds your monthly expenses by ₹
+                  {(profile.monthly_revenue - profile.monthly_expenses).toLocaleString("en-IN")}. This is a
+                  self-declared figure, shown here exactly as you entered it — it is not an approval
+                  probability or a lender&apos;s assessment.
                 </p>
               ) : (
                 <p>
-                  ⚠️ **Cash Flow Warning**: Your current business expenses exceed your revenues. Official grant committees may flags this as high default risk. Prioritize the roadmap steps to optimize operational expenses or boost sales.
+                  Your monthly expenses currently exceed your monthly revenue by ₹
+                  {(profile.monthly_expenses - profile.monthly_revenue).toLocaleString("en-IN")}. This is a
+                  self-declared figure, shown here exactly as you entered it — it does not predict
+                  whether any grant or loan will be approved. See the roadmap for concrete next steps.
                 </p>
               )}
             </div>
@@ -370,15 +487,12 @@ export default function ResultsPage() {
                     <motion.div key={criterion.id} variants={item}>
                       <CriterionCard
                         criterion={criterion}
+                        allCriteria={simulatedCriteria}
+                        roadmap={result.roadmap}
+                        profile={profile}
                         simulated={simulatedMetIds.includes(criterion.id)}
                         canSimulate={!isOriginallyMet}
-                        onToggleSimulate={() => {
-                          setSimulatedMetIds((prev) =>
-                            prev.includes(criterion.id)
-                              ? prev.filter((id) => id !== criterion.id)
-                              : [...prev, criterion.id]
-                          );
-                        }}
+                        onToggleSimulate={() => toggleSimulate(criterion.id)}
                       />
                     </motion.div>
                   );

@@ -11,3 +11,19 @@ body {
   color: var(--foreground);
   background: var(--background);
 }
+
+/* Proposal print experience — A4, generous margins, plain white page.
+   Screen-only chrome (header, Ledger, buttons) is hidden per-component via
+   Tailwind's print: variant; this block only handles page geometry, which
+   utility classes can't express. */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 14mm;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+  }
+}

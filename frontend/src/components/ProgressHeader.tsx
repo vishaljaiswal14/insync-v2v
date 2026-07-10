@@ -2,6 +2,8 @@
 
 import { usePathname, useRouter } from "next/navigation";
 
+import LedgerPill from "./ledger/LedgerPill";
+
 // Replaces a nav bar on the journey screens by design — there are no
 // destinations to choose between, only forward progress. The segments fill
 // as she moves; back is always available and never destructive, since
@@ -19,7 +21,7 @@ export default function ProgressHeader() {
   const activeIndex = STEPS.findIndex((step) => step.path === pathname);
 
   return (
-    <header className="border-b border-line bg-paper">
+    <header className="border-b border-line bg-paper print:hidden">
       <div className="mx-auto flex max-w-3xl items-center gap-4 px-6 py-4">
         <button
           type="button"
@@ -38,6 +40,7 @@ export default function ProgressHeader() {
             />
           ))}
         </div>
+        <LedgerPill />
       </div>
     </header>
   );

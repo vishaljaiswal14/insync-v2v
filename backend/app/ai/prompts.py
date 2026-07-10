@@ -14,25 +14,45 @@ from app.schemas.scheme import Scheme
 
 def build_explain_prompt(criterion: CriterionResult, language: str) -> str:
     language_name = SUPPORTED_LANGUAGES[language]
-    status = "already met" if criterion.met else "not yet met"
+    status = "MET (satisfied)" if criterion.met else "NOT YET MET (outstanding)"
     fix_line = (
-        f"\nWhat would resolve this: {criterion.fix_action}"
+        f"\n- Action required to resolve it: {criterion.fix_action}"
         if not criterion.met and criterion.fix_action
         else ""
     )
+    meanwhile_line = (
+        f"\n- Action to take while waiting: {criterion.meanwhile}"
+        if not criterion.met and criterion.meanwhile
+        else ""
+    )
+    category_desc = {
+        "grant": "Core Scheme/Grant Eligibility Rules",
+        "documentation": "Applicant Identity & Group Verification Documents",
+        "financial_documentation": "Business Financial Disclosures & Estimates"
+    }.get(criterion.category, criterion.category)
 
-    return f"""You are explaining an already-decided result. You do not decide eligibility — it is already decided.
-Do not invent any rule, date, number, or eligibility outcome beyond what is given below.
-Do not state or imply anything about approval or funding.
-Write 1-3 short, warm sentences in {language_name}.
+    return f"""You are explaining an already-decided eligibility check result for a government scheme.
+You must explain the result clearly, objectively, and warmly in {language_name}.
+The explanation must be purely explanatory: never speculate, never predict approval, never promise funding.
+Do not invent any new facts, rules, IDs, dates, or numerical targets. Use only the provided facts.
 
-Verified result:
-- Rule: "{criterion.rule_text}"
-- Plain meaning: "{criterion.plain}"
-- Status: {status}
-- Source: {criterion.source}{fix_line}
+Here is the deterministic verification record:
+- Checked Rule: "{criterion.rule_text}"
+- Rule ID: "{criterion.id}"
+- Scheme Source: "{criterion.source}"
+- Rule Category: "{category_desc}"
+- Current Status: {status}
+- Plain English Result: "{criterion.plain}"{fix_line}{meanwhile_line}
 
-Explain this result clearly and warmly."""
+Your explanation must concisely address:
+1. Why this check exists (why it was checked).
+2. The current outcome (why it passed or failed).
+3. The next steps the applicant must take (if unmet and fixable).
+4. Any relevant effort/timeframe involved (e.g., if there is a waiting period or if it can be resolved immediately).
+5. What becomes unlocked or progressed once this is solved (e.g. progressing documentation/financial readiness).
+6. State the official citation or basis for this rule.
+
+Write a single, cohesive, highly professional paragraph (3-4 sentences max) that integrates all these points. Remain explanatory only. Do not speculate on final approval."""
 
 
 def build_proposal_prompt(profile: Profile, result: SchemeResult, scheme: Scheme, language: str) -> str:

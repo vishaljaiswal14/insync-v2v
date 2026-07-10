@@ -1,15 +1,17 @@
-// The trust boundary made visible. "rule" and "user" share one flat,
-// official visual language; "ai" deliberately breaks it with a soft
-// gradient — so a reader can tell "fact" from "AI phrasing" by texture
+// The trust boundary made visible. Three categories that must never be
+// visually confused: a rule-engine decision, a fact the applicant typed in
+// herself, and AI phrasing. "rule" and "user" share one flat, official
+// visual language; "ai" deliberately breaks it with a dashed border — so a
+// reader can tell "fact" from "self-declared" from "AI phrasing" by texture
 // alone, without reading a word. Never used for the "Official Source"
 // citation itself — that's SourceChip's job.
 const VARIANTS = {
   rule: {
-    label: "Verified by Rule",
+    label: "Verified by Rule Engine",
     className: "border border-brand/20 bg-brand/5 text-brand",
   },
   user: {
-    label: "Verified by User",
+    label: "Self-Declared",
     className: "border border-line bg-paper text-ink-muted",
   },
   ai: {

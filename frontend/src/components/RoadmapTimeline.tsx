@@ -6,7 +6,7 @@ import CompletedFact from "./CompletedFact";
 import TimelineDestination from "./TimelineDestination";
 import TimelineNode from "./TimelineNode";
 import TodayMarker from "./TodayMarker";
-import type { CriterionResult, RoadmapStep } from "@/lib/types";
+import type { CriterionResult, Profile, RoadmapStep } from "@/lib/types";
 
 const BASE_DELAY = 0.1;
 const STEP_DELAY = 0.09;
@@ -27,6 +27,8 @@ function getStepPriority(step: RoadmapStep): 1 | 2 | 3 {
 
 export default function RoadmapTimeline({
   criteria,
+  roadmap = [],
+  profile = null,
   steps,
   hasBlockers,
   completingReason,
@@ -34,6 +36,8 @@ export default function RoadmapTimeline({
   onMarkDone,
 }: {
   criteria: CriterionResult[];
+  roadmap?: RoadmapStep[];
+  profile?: Profile | null;
   steps: RoadmapStep[];
   hasBlockers: boolean;
   completingReason: string | null;
@@ -57,6 +61,9 @@ export default function RoadmapTimeline({
         key={step.reason}
         step={step}
         criterion={criterion}
+        allCriteria={criteria}
+        roadmap={roadmap}
+        profile={profile}
         completing={completingReason === step.reason}
         submitting={submittingStep === step.reason}
         delay={nextDelay()}
@@ -79,7 +86,7 @@ export default function RoadmapTimeline({
         <div className="space-y-6">
           <AnimatePresence initial={false}>
             {priority1.length > 0 && (
-              <div className="space-y-4">
+              <div key="priority-1" className="space-y-4">
                 <div className="flex items-center gap-2 pl-12 pb-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
                   <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-accent-dark">
@@ -91,7 +98,7 @@ export default function RoadmapTimeline({
             )}
 
             {priority2.length > 0 && (
-              <div className="space-y-4">
+              <div key="priority-2" className="space-y-4">
                 <div className="flex items-center gap-2 pl-12 pb-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-brand" />
                   <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-brand">
@@ -103,7 +110,7 @@ export default function RoadmapTimeline({
             )}
 
             {priority3.length > 0 && (
-              <div className="space-y-4">
+              <div key="priority-3" className="space-y-4">
                 <div className="flex items-center gap-2 pl-12 pb-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
                   <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-success">

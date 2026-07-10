@@ -26,12 +26,13 @@ export default function RoadmapPage() {
   const [frozenSteps, setFrozenSteps] = useState<RoadmapStep[] | null>(null);
 
   useEffect(() => {
-    if (!state.result) router.replace("/assess");
-  }, [state.result, router]);
+    if (state.hydrated && !state.result) router.replace("/assess");
+  }, [state.hydrated, state.result, router]);
 
+  if (!state.hydrated) return null;
   if (!state.result) return null;
 
-  const { result } = state;
+  const { result, profile } = state;
   const grantCriteria = result.criteria.filter((c) => c.category === "grant");
   const grantMet = grantCriteria.filter((c) => c.met).length;
   const blockers = result.criteria.filter((c) => !c.met && !c.fixable);
@@ -67,7 +68,14 @@ export default function RoadmapPage() {
         />
       </div>
 
-      {blockers.length > 0 && <BlockersDisclosure blockers={blockers} />}
+      {blockers.length > 0 && (
+        <BlockersDisclosure
+          blockers={blockers}
+          allCriteria={result.criteria}
+          roadmap={result.roadmap}
+          profile={profile}
+        />
+      )}
 
       <p className="mt-8 text-sm text-ink-muted">
         Every step below is checked against a verified rule — not a guess.
@@ -76,6 +84,8 @@ export default function RoadmapPage() {
       <div className="mt-6">
         <RoadmapTimeline
           criteria={result.criteria}
+          roadmap={result.roadmap}
+          profile={profile}
           steps={displaySteps}
           hasBlockers={blockers.length > 0}
           completingReason={completingReason}

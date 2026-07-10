@@ -3,4 +3,7 @@
 **Team:** InSync (Vishal Jaiswal, Harsh Sagar)
 **Track:** Track 3 — ElevateHer (Education, FinTech & Career Empowerment)
 
-Project details will be added after the hackathon begins at 6:00 PM, July 9, 2026.
+**Project:** ShaktiScale AI — AI Business Readiness Copilot for Women Entrepreneurs.
+Government portals tell you how to apply. ShaktiScale tells you how to become application-ready.
+
+**Status:** In progress — deterministic rule engine + Mission Shakti scheme rules being built.

@@ -1,47 +1,149 @@
 "use client";
 
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
-import ActionCard from "./ActionCard";
+import CompletedFact from "./CompletedFact";
+import TimelineDestination from "./TimelineDestination";
 import TimelineNode from "./TimelineNode";
-import type { RoadmapStep } from "@/lib/types";
+import TodayMarker from "./TodayMarker";
+import type { CriterionResult, RoadmapStep } from "@/lib/types";
 
-// Container's only job: render the vertical line of steps, or the honest
-// empty state when there's nothing left to fix. Uses step.reason as the
-// stable key — the backend doesn't expose a criterion id on RoadmapStep,
-// and rule_text (mirrored into reason) is unique per scheme today.
+const BASE_DELAY = 0.1;
+const STEP_DELAY = 0.09;
+
+// Assembles the full bookended journey from raw result data: what's already
+// true (completed facts), where she stands (Today), what remains (steps or
+// an honest empty message), and where it all leads (the destination). The
+// shape of the journey is always visible, whether she's reached the end or not.
+function getStepPriority(step: RoadmapStep): 1 | 2 | 3 {
+  if (step.reason.includes("member of a Self-Help Group") || step.action.toLowerCase().includes("join")) {
+    return 1;
+  }
+  if (step.eligible_on !== null) {
+    return 2;
+  }
+  return 3;
+}
+
 export default function RoadmapTimeline({
+  criteria,
   steps,
+  hasBlockers,
+  completingReason,
   submittingStep,
   onMarkDone,
 }: {
+  criteria: CriterionResult[];
   steps: RoadmapStep[];
+  hasBlockers: boolean;
+  completingReason: string | null;
   submittingStep: string | null;
   onMarkDone: (step: RoadmapStep) => void;
 }) {
-  if (steps.length === 0) {
+  const completedFacts = criteria.filter((c) => c.met);
+  const reached = steps.length === 0 && !hasBlockers;
+
+  let index = 0;
+  const nextDelay = () => BASE_DELAY + index++ * STEP_DELAY;
+
+  const priority1 = steps.filter((s) => getStepPriority(s) === 1);
+  const priority2 = steps.filter((s) => getStepPriority(s) === 2);
+  const priority3 = steps.filter((s) => getStepPriority(s) === 3);
+
+  const renderNode = (step: RoadmapStep) => {
+    const criterion = criteria.find((c) => c.rule_text === step.reason) ?? null;
     return (
-      <ActionCard
-        emoji="✓"
-        title="You meet every criterion for this scheme"
-        description="There's nothing left to close for grant eligibility right now."
+      <TimelineNode
+        key={step.reason}
+        step={step}
+        criterion={criterion}
+        completing={completingReason === step.reason}
+        submitting={submittingStep === step.reason}
+        delay={nextDelay()}
+        onMarkDone={step.eligible_on === null ? () => onMarkDone(step) : undefined}
       />
     );
-  }
+  };
 
   return (
-    <div>
-      <AnimatePresence initial={false}>
-        {steps.map((step, index) => (
-          <TimelineNode
-            key={step.reason}
-            step={step}
-            isLast={index === steps.length - 1}
-            submitting={submittingStep === step.reason}
-            onMarkDone={step.eligible_on === null ? () => onMarkDone(step) : undefined}
-          />
-        ))}
-      </AnimatePresence>
+    <div className="relative">
+      {completedFacts.map((criterion) => (
+        <CompletedFact key={criterion.id} text={criterion.plain} delay={nextDelay()} />
+      ))}
+
+      <TodayMarker delay={nextDelay()} />
+
+      {steps.length === 0 ? (
+        <EmptyRow hasBlockers={hasBlockers} delay={nextDelay()} />
+      ) : (
+        <div className="space-y-6">
+          <AnimatePresence initial={false}>
+            {priority1.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pl-12 pb-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-accent-dark">
+                    Priority 1: Immediate Prerequisites
+                  </span>
+                </div>
+                {priority1.map(renderNode)}
+              </div>
+            )}
+
+            {priority2.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pl-12 pb-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-brand">
+                    Priority 2: Clock-Starters (Time-Gated)
+                  </span>
+                </div>
+                {priority2.map(renderNode)}
+              </div>
+            )}
+
+            {priority3.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pl-12 pb-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-success">
+                    Priority 3: Operational Quick Wins
+                  </span>
+                </div>
+                {priority3.map(renderNode)}
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      <TimelineDestination reached={reached} delay={nextDelay() + 0.2} />
     </div>
+  );
+}
+
+function EmptyRow({ hasBlockers, delay }: { hasBlockers: boolean; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, delay }}
+      className="relative flex gap-4 pb-8"
+    >
+      <motion.span
+        initial={{ scaleY: 0 }}
+        animate={{ scaleY: 1 }}
+        transition={{ duration: 0.3, delay }}
+        style={{ transformOrigin: "top" }}
+        className="absolute left-4 top-8 h-full border-l-2 border-dashed border-line"
+        aria-hidden="true"
+      />
+      <span className="z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-line" aria-hidden="true" />
+      <p className="pt-1 text-sm text-ink-muted">
+        {hasBlockers
+          ? "There's nothing further to act on for this scheme right now."
+          : "Every criterion for this scheme is already verified."}
+      </p>
+    </motion.div>
   );
 }

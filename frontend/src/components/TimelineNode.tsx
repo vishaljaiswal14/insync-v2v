@@ -1,26 +1,34 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState } from "react";
 
-import ConfidenceBadge from "./ConfidenceBadge";
-import type { RoadmapStep } from "@/lib/types";
+import ExplainDisclosure from "./ExplainDisclosure";
+import SourceChip from "./SourceChip";
+import type { CriterionResult, RoadmapStep } from "@/lib/types";
 
-// Two states only, by design: every step on this screen is already an
-// unmet-but-fixable gap (the backend filters out structural blockers before
-// it ever reaches here — those live on the Results screen instead).
-// Time-gated steps get a date, never a button — no click can make a month
-// pass, and pretending otherwise would break the product's honesty rule.
+// Two live states, by design: every step here is already unmet-but-fixable
+// (structural blockers live in BlockersDisclosure, not here). Time-gated
+// steps get a date, never a button — no click can make a month pass, and
+// pretending otherwise would break the product's honesty rule. A third,
+// transitional "completing" state renders when mark-done is in flight, so
+// the checkmark is seen before the step ever leaves the list.
 export default function TimelineNode({
   step,
-  isLast,
+  criterion,
+  completing,
   submitting,
+  delay,
   onMarkDone,
 }: {
   step: RoadmapStep;
-  isLast: boolean;
+  criterion: CriterionResult | null;
+  completing: boolean;
   submitting: boolean;
+  delay: number;
   onMarkDone?: () => void;
 }) {
+  const [citationOpen, setCitationOpen] = useState(false);
   const isTimeGated = step.eligible_on !== null;
 
   return (
@@ -28,53 +36,104 @@ export default function TimelineNode({
       layout
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 8 }}
-      transition={{ duration: 0.25 }}
+      exit={{ opacity: 0, x: 8, transition: { duration: 0.2 } }}
+      transition={{ duration: 0.3, delay }}
       className="relative flex gap-4 pb-8"
     >
-      {!isLast && (
-        <span className="absolute left-[15px] top-8 h-full w-px bg-gray-200" aria-hidden="true" />
-      )}
-
-      <span
-        className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm ${
-          isTimeGated ? "border-accent bg-accent/10 text-accent" : "border-brand/40 text-brand"
-        }`}
+      <motion.span
+        initial={{ scaleY: 0 }}
+        animate={{ scaleY: 1 }}
+        transition={{ duration: 0.3, delay }}
+        style={{ transformOrigin: "top" }}
+        className="absolute left-4 top-8 h-full border-l-2 border-dashed border-line"
         aria-hidden="true"
-      >
-        {isTimeGated ? "📅" : "○"}
-      </span>
+      />
 
-      <div className="flex-1 rounded-2xl border border-gray-100 p-4">
-        <p className="text-sm font-medium text-gray-800">{step.action}</p>
-        <p className="mt-1 text-xs text-gray-500">{step.reason}</p>
+      <Marker completing={completing} isTimeGated={isTimeGated} />
 
-        {isTimeGated && (
-          <p className="mt-3 text-lg font-semibold text-accent">Eligible on {formatDate(step.eligible_on!)}</p>
+      <div className="flex-1 rounded-2xl border border-line bg-white p-4 shadow-card">
+        <p className="text-sm font-medium text-ink">{step.action}</p>
+
+        <p className="mt-1 text-xs text-ink-muted">
+          {step.reason}
+          {criterion && (
+            <button
+              type="button"
+              onClick={() => setCitationOpen((v) => !v)}
+              className="ml-2 font-mono text-[11px] tracking-tight text-ink-faint hover:text-brand"
+            >
+              [{formatCitationCode(criterion.id)}]
+            </button>
+          )}
+        </p>
+
+        {citationOpen && criterion && (
+          <div className="mt-2 space-y-2 border-l-2 border-line pl-3">
+            <p className="text-sm italic text-ink-muted">&ldquo;{criterion.rule_text}&rdquo;</p>
+            <SourceChip label={criterion.source} url={criterion.source_url} />
+          </div>
         )}
 
-        {step.meanwhile && (
-          <p className="mt-2 border-l-2 border-gray-100 pl-3 text-xs text-gray-500">
-            Meanwhile: {step.meanwhile}
+        {isTimeGated && (
+          <p className="mt-3 font-serif text-2xl font-semibold text-accent-dark">
+            Eligible on {formatDate(step.eligible_on!)}
           </p>
         )}
 
-        <div className="mt-3 flex items-center justify-between">
-          <ConfidenceBadge variant="rule" />
+        {step.meanwhile && (
+          <p className="mt-2 border-l-2 border-line pl-3 text-xs text-ink-muted">Meanwhile: {step.meanwhile}</p>
+        )}
+
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="flex-1">{criterion && <ExplainDisclosure criterion={criterion} compact />}</div>
           {!isTimeGated && onMarkDone && (
             <button
               type="button"
               onClick={onMarkDone}
-              disabled={submitting}
-              className="rounded-lg border border-brand/30 px-3 py-1.5 text-xs font-semibold text-brand transition hover:bg-brand/5 disabled:opacity-50"
+              disabled={submitting || completing}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-brand/30 px-4 text-xs font-semibold text-brand transition hover:bg-brand/5 disabled:opacity-50"
             >
-              {submitting ? "Updating…" : "Mark done"}
+              {submitting || completing ? "Updating…" : "Mark done"}
             </button>
           )}
         </div>
       </div>
     </motion.div>
   );
+}
+
+function Marker({ completing, isTimeGated }: { completing: boolean; isTimeGated: boolean }) {
+  if (completing) {
+    return (
+      <span
+        className="z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-white"
+        aria-hidden="true"
+      >
+        <motion.span initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.25 }}>
+          ✓
+        </motion.span>
+      </span>
+    );
+  }
+
+  if (isTimeGated) {
+    return (
+      <span
+        className="z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-accent-dark"
+        aria-hidden="true"
+      >
+        <span className="h-2.5 w-2.5 rounded-full bg-accent-dark" />
+      </span>
+    );
+  }
+
+  return (
+    <span className="z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-brand" aria-hidden="true" />
+  );
+}
+
+function formatCitationCode(id: string): string {
+  return id.toUpperCase().replace(/_/g, "-");
 }
 
 function formatDate(iso: string): string {

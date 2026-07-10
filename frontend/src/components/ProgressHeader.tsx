@@ -19,12 +19,12 @@ export default function ProgressHeader() {
   const activeIndex = STEPS.findIndex((step) => step.path === pathname);
 
   return (
-    <header className="border-b border-gray-100 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-4xl items-center gap-4 px-6 py-4">
+    <header className="border-b border-line bg-paper">
+      <div className="mx-auto flex max-w-3xl items-center gap-4 px-6 py-4">
         <button
           type="button"
           onClick={() => router.back()}
-          className="text-sm font-medium text-gray-400 transition hover:text-gray-600"
+          className="text-xs font-semibold uppercase tracking-wider text-ink-faint transition hover:text-ink-muted"
         >
           ← Back
         </button>
@@ -33,7 +33,7 @@ export default function ProgressHeader() {
             <div
               key={step.path}
               className={`h-1 flex-1 rounded-full transition-colors ${
-                index <= activeIndex ? "bg-brand" : "bg-gray-100"
+                index <= activeIndex ? "bg-brand" : "bg-line"
               }`}
             />
           ))}

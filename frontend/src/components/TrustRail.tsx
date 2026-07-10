@@ -11,15 +11,15 @@ export default function TrustRail({
   aiCount?: number;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-full border border-gray-100 bg-gray-50/60 px-4 py-2 text-xs font-medium text-gray-600">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-line bg-paper px-4 py-2 text-xs font-medium text-ink-muted">
       <span>✓ {ruleCount} Verified by Rule</span>
-      <span className="text-gray-300">·</span>
+      <span className="text-line">·</span>
       <span>
         {sourceCount} Official Source{sourceCount === 1 ? "" : "s"}
       </span>
       {aiCount > 0 && (
         <>
-          <span className="text-gray-300">·</span>
+          <span className="text-line">·</span>
           <span>{aiCount} AI-Generated</span>
         </>
       )}

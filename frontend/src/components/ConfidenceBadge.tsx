@@ -6,15 +6,15 @@
 const VARIANTS = {
   rule: {
     label: "Verified by Rule",
-    className: "border border-brand/30 bg-brand/5 text-brand-dark",
+    className: "border border-brand/20 bg-brand/5 text-brand",
   },
   user: {
     label: "Verified by User",
-    className: "border border-gray-300 bg-gray-50 text-gray-600",
+    className: "border border-line bg-paper text-ink-muted",
   },
   ai: {
     label: "AI Generated",
-    className: "bg-gradient-to-r from-brand/15 to-accent/15 text-brand-dark",
+    className: "border border-dashed border-accent/40 bg-accent/5 text-accent-dark",
   },
 } as const;
 

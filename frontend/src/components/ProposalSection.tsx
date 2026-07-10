@@ -16,12 +16,12 @@ export default function ProposalSection({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-100 p-6">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-brand-dark">{title}</h3>
+    <div className="rounded-xl border border-line bg-white p-6 shadow-card">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="font-serif text-lg font-semibold text-ink">{title}</h3>
         <ConfidenceBadge variant={aiGenerated ? "ai" : "rule"} />
       </div>
-      <div className="text-sm leading-relaxed text-gray-600">{children}</div>
+      <div className="text-sm leading-relaxed text-ink-muted">{children}</div>
     </div>
   );
 }

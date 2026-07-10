@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { buttonVariants } from "@/components/ui/Button";
 import { useAssessment } from "@/context/AssessmentContext";
 import { SAMPLE_PROFILES } from "@/lib/sampleProfiles";
 
@@ -28,7 +29,7 @@ export default function TryDemoButton() {
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className="rounded-lg border border-gray-200 px-6 py-3 font-semibold text-gray-700 transition hover:border-brand hover:text-brand disabled:opacity-50"
+      className={buttonVariants("secondary")}
     >
       {loading ? "Loading demo…" : "Try Demo — no typing needed"}
     </button>

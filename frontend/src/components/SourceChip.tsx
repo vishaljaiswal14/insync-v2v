@@ -7,10 +7,10 @@ export default function SourceChip({ label, url }: { label: string; url: string 
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+      className="inline-flex items-center gap-1 rounded border border-line bg-paper px-2 py-0.5 font-mono text-[10px] font-medium tracking-tight text-ink-muted transition hover:border-brand/30 hover:text-brand"
     >
       {label}
-      <span aria-hidden="true">↗</span>
+      <span className="text-[9px]" aria-hidden="true">↗</span>
     </a>
   );
 }

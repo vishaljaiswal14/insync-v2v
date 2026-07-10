@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
 
-import { evaluateProfile } from "@/lib/api";
+import { evaluateProfile, getSchemes } from "@/lib/api";
 import { CRITERION_ACTIONS } from "@/lib/roadmapActions";
 import type { Profile, RoadmapStep, SchemeResult } from "@/lib/types";
 
@@ -14,6 +14,13 @@ type State = {
   result: SchemeResult | null;
   resultFetchedAt: string | null;
   simulatedMetIds: string[];
+  verifiedDocuments: string[];
+  // Discovered from the backend, not hardcoded — /schemes is the single
+  // source of truth for which scheme(s) exist. Empty until the fetch below
+  // resolves; submitProfile/markStepDone fall back to FALLBACK_SCHEME_ID if
+  // it's still empty when they're called, so the app never breaks waiting
+  // on this request.
+  schemeIds: string[];
   status: Status;
   error: string | null;
   ledgerOpen: boolean;
@@ -27,12 +34,15 @@ type Action =
       result: SchemeResult | null;
       resultFetchedAt: string | null;
       simulatedMetIds: string[];
+      verifiedDocuments: string[];
     }
+  | { type: "SCHEMES_LOADED"; schemeIds: string[] }
   | { type: "EVALUATE_START" }
   | { type: "EVALUATE_SUCCESS"; profile: Profile; result: SchemeResult }
   | { type: "EVALUATE_ERROR"; error: string }
   | { type: "SIMULATE_TOGGLE"; id: string }
   | { type: "SIMULATE_RESET" }
+  | { type: "VERIFY_DOCUMENT"; documentId: string }
   | { type: "LEDGER_OPEN"; focusIds: string[] | null }
   | { type: "LEDGER_CLOSE" }
   | { type: "RESET" };
@@ -43,6 +53,8 @@ const initialState: State = {
   result: null,
   resultFetchedAt: null,
   simulatedMetIds: [],
+  verifiedDocuments: [],
+  schemeIds: [],
   status: "idle",
   error: null,
   ledgerOpen: false,
@@ -55,6 +67,11 @@ const initialState: State = {
 // to a server" claim the product makes elsewhere.
 const STORAGE_KEY = "shaktiscale.assessment.v1";
 
+// Defensive fallback only — used if the /schemes fetch hasn't resolved yet
+// (or fails) at the moment a profile is submitted. Not a design assumption
+// that only one scheme will ever exist; see the `schemeIds` fetch below.
+const FALLBACK_SCHEME_ID = "mission_shakti_grant";
+
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "HYDRATE":
@@ -65,7 +82,10 @@ function reducer(state: State, action: Action): State {
         result: action.result,
         resultFetchedAt: action.resultFetchedAt,
         simulatedMetIds: action.simulatedMetIds,
+        verifiedDocuments: action.verifiedDocuments,
       };
+    case "SCHEMES_LOADED":
+      return { ...state, schemeIds: action.schemeIds };
     case "EVALUATE_START":
       return { ...state, status: "loading", error: null };
     case "EVALUATE_SUCCESS":
@@ -91,12 +111,22 @@ function reducer(state: State, action: Action): State {
       };
     case "SIMULATE_RESET":
       return { ...state, simulatedMetIds: [] };
+    case "VERIFY_DOCUMENT":
+      return {
+        ...state,
+        verifiedDocuments: state.verifiedDocuments.includes(action.documentId)
+          ? state.verifiedDocuments
+          : [...state.verifiedDocuments, action.documentId],
+      };
     case "LEDGER_OPEN":
       return { ...state, ledgerOpen: true, ledgerFocusIds: action.focusIds };
     case "LEDGER_CLOSE":
       return { ...state, ledgerOpen: false, ledgerFocusIds: null };
     case "RESET":
-      return { ...initialState, hydrated: true };
+      // schemeIds is a discovered backend fact, not session data — no
+      // reason to lose it on reset (and the discovery effect only runs
+      // once, on mount, so it wouldn't be re-fetched otherwise).
+      return { ...initialState, hydrated: true, schemeIds: state.schemeIds };
     default:
       return state;
   }
@@ -108,14 +138,13 @@ type AssessmentContextValue = {
   markStepDone: (step: RoadmapStep) => Promise<void>;
   toggleSimulate: (id: string) => void;
   resetSimulate: () => void;
+  verifyDocument: (documentId: string) => void;
   openLedger: (focusIds?: string[] | null) => void;
   closeLedger: () => void;
   reset: () => void;
 };
 
 const AssessmentContext = createContext<AssessmentContextValue | null>(null);
-
-const SCHEME_ID = "mission_shakti_grant"; // only scheme verified and loaded so far
 
 export function AssessmentProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -138,14 +167,34 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
           result: parsed.result ?? null,
           resultFetchedAt: parsed.resultFetchedAt ?? null,
           simulatedMetIds: Array.isArray(parsed.simulatedMetIds) ? parsed.simulatedMetIds : [],
+          verifiedDocuments: Array.isArray(parsed.verifiedDocuments) ? parsed.verifiedDocuments : [],
         });
         return;
       }
     } catch {
       // Corrupted or unavailable storage — start clean rather than throwing.
     }
-    dispatch({ type: "HYDRATE", profile: null, result: null, resultFetchedAt: null, simulatedMetIds: [] });
+    dispatch({
+      type: "HYDRATE",
+      profile: null,
+      result: null,
+      resultFetchedAt: null,
+      simulatedMetIds: [],
+      verifiedDocuments: [],
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Discover available schemes from the backend once, on mount — the
+  // frontend no longer hardcodes which scheme id(s) exist. If this fails or
+  // hasn't resolved yet, submitProfile/markStepDone fall back to
+  // FALLBACK_SCHEME_ID so the app still works.
+  useEffect(() => {
+    getSchemes()
+      .then((schemes) => dispatch({ type: "SCHEMES_LOADED", schemeIds: schemes.map((s) => s.scheme_id) }))
+      .catch(() => {
+        // Leave schemeIds empty — callers fall back to FALLBACK_SCHEME_ID.
+      });
   }, []);
 
   useEffect(() => {
@@ -158,23 +207,45 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
           result: state.result,
           resultFetchedAt: state.resultFetchedAt,
           simulatedMetIds: state.simulatedMetIds,
+          verifiedDocuments: state.verifiedDocuments,
         }),
       );
     } catch {
       // Storage full or unavailable — persistence degrades silently;
       // evaluation itself is unaffected.
     }
-  }, [state.hydrated, state.profile, state.result, state.resultFetchedAt, state.simulatedMetIds]);
+  }, [
+    state.hydrated,
+    state.profile,
+    state.result,
+    state.resultFetchedAt,
+    state.simulatedMetIds,
+    state.verifiedDocuments,
+  ]);
 
-  const submitProfile = useCallback(async (profile: Profile) => {
-    dispatch({ type: "EVALUATE_START" });
-    try {
-      const response = await evaluateProfile(profile, [SCHEME_ID]);
-      dispatch({ type: "EVALUATE_SUCCESS", profile, result: response.results[0] });
-    } catch (err) {
-      dispatch({ type: "EVALUATE_ERROR", error: err instanceof Error ? err.message : "Evaluation failed" });
-    }
-  }, []);
+  // Resolves which scheme id(s) to evaluate against: the backend-discovered
+  // list if it's arrived, otherwise the defensive fallback. Still only ever
+  // displays `results[0]` — supporting multiple *simultaneous* scheme
+  // results in the UI (a scheme selector across Results/Roadmap/Proposal)
+  // is a larger feature than removing this hardcoded assumption, and isn't
+  // implemented here.
+  const resolveSchemeIds = useCallback(
+    (currentSchemeIds: string[]) => (currentSchemeIds.length > 0 ? currentSchemeIds : [FALLBACK_SCHEME_ID]),
+    [],
+  );
+
+  const submitProfile = useCallback(
+    async (profile: Profile) => {
+      dispatch({ type: "EVALUATE_START" });
+      try {
+        const response = await evaluateProfile(profile, resolveSchemeIds(state.schemeIds));
+        dispatch({ type: "EVALUATE_SUCCESS", profile, result: response.results[0] });
+      } catch (err) {
+        dispatch({ type: "EVALUATE_ERROR", error: err instanceof Error ? err.message : "Evaluation failed" });
+      }
+    },
+    [state.schemeIds, resolveSchemeIds],
+  );
 
   const markStepDone = useCallback(
     async (step: RoadmapStep) => {
@@ -187,17 +258,18 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
       const updatedProfile: Profile = { ...state.profile, ...applyAction(state.profile) };
       dispatch({ type: "EVALUATE_START" });
       try {
-        const response = await evaluateProfile(updatedProfile, [SCHEME_ID]);
+        const response = await evaluateProfile(updatedProfile, resolveSchemeIds(state.schemeIds));
         dispatch({ type: "EVALUATE_SUCCESS", profile: updatedProfile, result: response.results[0] });
       } catch (err) {
         dispatch({ type: "EVALUATE_ERROR", error: err instanceof Error ? err.message : "Evaluation failed" });
       }
     },
-    [state.profile, state.result],
+    [state.profile, state.result, state.schemeIds, resolveSchemeIds],
   );
 
   const toggleSimulate = useCallback((id: string) => dispatch({ type: "SIMULATE_TOGGLE", id }), []);
   const resetSimulate = useCallback(() => dispatch({ type: "SIMULATE_RESET" }), []);
+  const verifyDocument = useCallback((documentId: string) => dispatch({ type: "VERIFY_DOCUMENT", documentId }), []);
   const openLedger = useCallback(
     (focusIds: string[] | null = null) => dispatch({ type: "LEDGER_OPEN", focusIds }),
     [],
@@ -222,11 +294,22 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
       markStepDone,
       toggleSimulate,
       resetSimulate,
+      verifyDocument,
       openLedger,
       closeLedger,
       reset,
     }),
-    [state, submitProfile, markStepDone, toggleSimulate, resetSimulate, openLedger, closeLedger, reset],
+    [
+      state,
+      submitProfile,
+      markStepDone,
+      toggleSimulate,
+      resetSimulate,
+      verifyDocument,
+      openLedger,
+      closeLedger,
+      reset,
+    ],
   );
 
   return <AssessmentContext.Provider value={value}>{children}</AssessmentContext.Provider>;

@@ -15,12 +15,15 @@ export default function SupportingEvidenceList({ criteria }: { criteria: Criteri
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-4 print:hidden">
         <ConfidenceBadge variant="rule" />
       </div>
       <ul className="space-y-3">
         {met.map((criterion) => (
-          <li key={criterion.id} className="flex items-start justify-between gap-4 border-b border-line pb-3 last:border-b-0">
+          <li
+            key={criterion.id}
+            className="flex items-start justify-between gap-4 border-b border-line pb-3 last:border-b-0 print:break-inside-avoid"
+          >
             <div>
               <p className="text-sm font-medium text-ink print:text-ink">{ruleName(criterion.id)}</p>
               <p className="mt-0.5 text-sm text-ink-muted print:text-ink">{criterion.plain}</p>

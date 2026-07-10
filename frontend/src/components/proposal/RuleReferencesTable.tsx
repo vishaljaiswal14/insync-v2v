@@ -38,7 +38,7 @@ export default function RuleReferencesTable({ criteria }: { criteria: CriterionR
               const status = statusForCriterion(criterion);
               const glyph = STATUS_GLYPH[status];
               return (
-                <tr key={criterion.id} className="border-b border-line align-top last:border-b-0">
+                <tr key={criterion.id} className="border-b border-line align-top last:border-b-0 print:break-inside-avoid">
                   <td className="whitespace-nowrap py-3 pr-4 font-mono text-xs text-ink-faint print:text-ink">
                     [{criterion.id.toUpperCase().replace(/_/g, "-")}]
                   </td>

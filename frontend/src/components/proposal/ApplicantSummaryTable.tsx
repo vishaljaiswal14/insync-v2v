@@ -49,7 +49,7 @@ export default function ApplicantSummaryTable({
       <table className="w-full border-collapse text-sm">
         <tbody>
           {rows.map(([label, value]) => (
-            <tr key={label} className="border-b border-line last:border-b-0">
+            <tr key={label} className="border-b border-line last:border-b-0 print:break-inside-avoid">
               <th className="w-1/3 py-2.5 pr-4 text-left align-top font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint print:text-ink">
                 {label}
               </th>

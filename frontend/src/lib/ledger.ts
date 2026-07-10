@@ -84,6 +84,10 @@ export function roadmapStepFor(criterion: CriterionResult, roadmap: RoadmapStep[
   return roadmap.find((step) => step.reason === criterion.rule_text) ?? null;
 }
 
+// Frontend-authored guidance, not scheme data — the backend never returns an
+// effort estimate, so these are illustrative judgment calls, not verified
+// facts. Every place this is shown must label it as guidance, never as a
+// deterministic result. See RuleDossier's "Typical effort (guidance)" label.
 const RULE_EFFORT: Record<string, string> = {
   gender_female: "None (Structural constraint)",
   odisha_resident: "None (Structural constraint)",
@@ -97,5 +101,19 @@ const RULE_EFFORT: Record<string, string> = {
 };
 
 export function ruleEffort(id: string): string {
-  return RULE_EFFORT[id] ?? "Low";
+  // Deliberately not defaulting to "Low" — asserting a specific effort level
+  // for a criterion this table knows nothing about (e.g. a future second
+  // scheme) would be a small fabrication. A neutral "not yet estimated" is
+  // honest about the gap instead of guessing.
+  return RULE_EFFORT[id] ?? "Not yet estimated for this rule";
 }
+
+// Which self-declared document each document-backed criterion corresponds
+// to, in terms of the `documents` list values the Assessment form collects.
+// Used to offer mock DigiLocker verification only where it makes sense —
+// you can't "verify" a document the criterion isn't actually about.
+export const DOCUMENT_CRITERION_IDS: Record<string, string> = {
+  has_aadhaar: "aadhaar",
+  has_shg_certificate: "shg_certificate",
+  has_business_quotation: "business_quotation",
+};

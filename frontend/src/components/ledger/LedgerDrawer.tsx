@@ -12,6 +12,8 @@ import { buildLedger } from "@/lib/ledger";
 export default function LedgerDrawer() {
   const { state, closeLedger } = useAssessment();
   const containerRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const criteria = state.result?.criteria ?? [];
@@ -38,6 +40,20 @@ export default function LedgerDrawer() {
     }
   }, [state.ledgerOpen, closeLedger]);
 
+  // Focus management for the dialog: remember what had focus before opening
+  // (usually the ring/date/pill that triggered it), move focus into the
+  // drawer so keyboard/screen-reader users land somewhere sensible, and
+  // restore focus on close rather than leaving it stranded on a now-hidden
+  // element.
+  useEffect(() => {
+    if (state.ledgerOpen) {
+      previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+      closeButtonRef.current?.focus();
+    } else {
+      previouslyFocusedRef.current?.focus?.();
+    }
+  }, [state.ledgerOpen]);
+
   if (!state.result) return null;
 
   return (
@@ -52,6 +68,7 @@ export default function LedgerDrawer() {
       <div
         ref={containerRef}
         role="dialog"
+        aria-modal="true"
         aria-label="Decision Ledger"
         className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-full flex-col border-l border-line bg-white shadow-card transition-transform duration-200 print:hidden sm:max-w-[440px] ${
           state.ledgerOpen ? "translate-x-0" : "translate-x-full"
@@ -67,6 +84,7 @@ export default function LedgerDrawer() {
             </h2>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={closeLedger}
             className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-ink-muted hover:border-brand/30 hover:text-brand"

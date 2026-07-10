@@ -32,7 +32,7 @@ export default function EligibilitySummaryBlock({
   const projected = computeProjectedReadiness(criteria);
 
   return (
-    <div className="rounded-sm border-2 border-brand bg-brand-light p-6">
+    <div className="rounded-sm border-2 border-brand bg-brand-light p-6 print:break-inside-avoid">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
           <span className="block font-mono text-[10px] font-bold uppercase tracking-wider text-ink-muted">

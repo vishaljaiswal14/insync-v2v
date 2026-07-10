@@ -14,8 +14,14 @@ export default function DocumentSection({
   children: ReactNode;
 }) {
   return (
-    <section className="py-8 border-b border-line last:border-b-0 print:break-inside-avoid">
-      <div className="mb-5 flex items-baseline gap-3">
+    <section className="py-8 border-b border-line last:border-b-0">
+      {/* Only the heading itself is protected from an orphaned page break —
+          the section body (tables in particular) can be taller than one A4
+          page, so forcing the whole section to avoid breaking would just
+          push it entirely onto the next page instead of splitting cleanly
+          between rows. Per-row/per-item break control lives in each
+          section's own component (see e.g. OutstandingRequirementsTable). */}
+      <div className="mb-5 flex items-baseline gap-3 print:break-after-avoid">
         <span className="font-mono text-sm font-bold text-brand">{String(index).padStart(2, "0")}</span>
         <h2 className="font-serif text-xl font-semibold text-ink">{title}</h2>
       </div>

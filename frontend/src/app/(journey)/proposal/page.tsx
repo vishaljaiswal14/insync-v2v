@@ -76,7 +76,7 @@ function ProposalDocument({
     <div className="min-h-screen bg-paper py-10 print:bg-white print:py-0">
       <div className="mx-auto max-w-3xl px-6 print:max-w-none print:px-0">
         <div className="rounded-sm border border-line bg-white px-6 py-8 shadow-card md:px-12 md:py-10 print:border-0 print:px-0 print:py-0 print:shadow-none">
-          <ProposalMasthead schemeName={result.scheme_name} />
+          <ProposalMasthead schemeName={result.scheme_name} printReady={!generating} />
 
           <DocumentSection index={1} title="Applicant Summary">
             <ApplicantSummaryTable profile={profile} result={result} resultFetchedAt={resultFetchedAt} />

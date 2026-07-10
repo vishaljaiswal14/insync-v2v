@@ -6,7 +6,15 @@ import { buttonVariants } from "@/components/ui/Button";
 // shortened label invented for this header — truncating "Mission Shakti
 // Enterprise Grant" down to a stylized "MISSION SHAKTI" would be a small,
 // needless fabrication of an official name.
-export default function ProposalMasthead({ schemeName }: { schemeName: string }) {
+export default function ProposalMasthead({
+  schemeName,
+  printReady,
+}: {
+  schemeName: string;
+  /** False while the Generated Proposal section is still loading — printing
+   *  mid-generation would bake a "Preparing…" placeholder into the PDF. */
+  printReady: boolean;
+}) {
   return (
     <div className="mb-2 flex flex-wrap items-start justify-between gap-4 border-b-2 border-brand pb-6">
       <div>
@@ -19,9 +27,11 @@ export default function ProposalMasthead({ schemeName }: { schemeName: string })
       <button
         type="button"
         onClick={() => window.print()}
+        disabled={!printReady}
+        title={printReady ? undefined : "Preparing the document — available once generation finishes"}
         className={`shrink-0 print:hidden ${buttonVariants("secondary")}`}
       >
-        Print / Save PDF
+        {printReady ? "Print / Save PDF" : "Preparing document…"}
       </button>
     </div>
   );

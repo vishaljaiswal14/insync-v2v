@@ -5,9 +5,11 @@ import { useState } from "react";
 import ConfidenceBadge from "./ConfidenceBadge";
 import SourceChip from "./SourceChip";
 import Tag from "./ui/Tag";
+import VerifyDigiLockerButton from "./VerifyDigiLockerButton";
 import { explainCriterion } from "@/lib/api";
 import { categoryDisplayName, computeSingleFixImpact } from "@/lib/readiness";
-import { evidenceLabelFor, ruleEffort } from "@/lib/ledger";
+import { DOCUMENT_CRITERION_IDS, evidenceLabelFor, ruleEffort } from "@/lib/ledger";
+import { useAssessment } from "@/context/AssessmentContext";
 import type { CriterionResult, ExplainResponse, Profile, RoadmapStep } from "@/lib/types";
 
 // Replaces ExplainDisclosure. Where that component asked the AI to narrate a
@@ -39,6 +41,7 @@ export default function RuleDossier({
 }) {
   const [explanation, setExplanation] = useState<ExplainResponse | null>(null);
   const [explaining, setExplaining] = useState(false);
+  const { state, verifyDocument } = useAssessment();
 
   async function handleExplain() {
     setExplaining(true);
@@ -54,6 +57,13 @@ export default function RuleDossier({
   const impact = !criterion.met && criterion.fixable ? computeSingleFixImpact(allCriteria, criterion.id) : null;
   const label = compact ? "text-[11px]" : "text-xs";
   const body = compact ? "text-xs" : "text-sm";
+
+  // Mock DigiLocker verification only ever applies to a document-backed,
+  // already self-declared-true criterion — you can't "verify" a document
+  // the rule isn't about, or one she hasn't claimed to have yet.
+  const documentId = DOCUMENT_CRITERION_IDS[criterion.id];
+  const isDocumentCriterion = documentId !== undefined;
+  const isVerified = isDocumentCriterion && state.verifiedDocuments.includes(documentId);
 
   return (
     <div className="space-y-3">
@@ -76,14 +86,19 @@ export default function RuleDossier({
         <p className={`${body} text-ink leading-relaxed`}>{criterion.plain}</p>
       </div>
 
-      {/* Evidence used — self-declared, never confused with the verified decision */}
+      {/* Evidence used — self-declared by default, upgradable to a mocked
+          DigiLocker verification for document-backed criteria. Never
+          confused with the rule engine's own verified decision above. */}
       {evidence && (
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-2">
             <span className={`${label} font-semibold uppercase tracking-wider text-ink-muted`}>Evidence used</span>
-            <ConfidenceBadge variant="user" />
+            <ConfidenceBadge variant={isVerified ? "verified" : "user"} />
           </div>
           <p className={`${body} text-ink-muted leading-relaxed`}>{evidence}</p>
+          {isDocumentCriterion && criterion.met && (
+            <VerifyDigiLockerButton verified={isVerified} onVerify={() => verifyDocument(documentId)} compact={compact} />
+          )}
         </div>
       )}
 
@@ -94,9 +109,12 @@ export default function RuleDossier({
           <p className={`${body} font-medium text-ink`}>{criterion.fix_action}</p>
           
           <span className="block text-[10px] font-bold uppercase tracking-wider text-amber pt-1">
-            Estimated effort
+            Typical effort (guidance)
           </span>
           <p className={`${body} text-ink-muted leading-relaxed`}>{ruleEffort(criterion.id)}</p>
+          <p className="text-[10px] text-ink-faint italic">
+            General guidance only — not a verified estimate from the scheme.
+          </p>
 
           <span className="block text-[10px] font-bold uppercase tracking-wider text-amber pt-1">
             Estimated time

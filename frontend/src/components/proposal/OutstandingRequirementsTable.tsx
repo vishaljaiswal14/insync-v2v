@@ -51,7 +51,7 @@ export default function OutstandingRequirementsTable({
               const impact = computeSingleFixImpact(criteria, criterion.id);
 
               return (
-                <tr key={step.reason} className="border-b border-line align-top last:border-b-0">
+                <tr key={step.reason} className="border-b border-line align-top last:border-b-0 print:break-inside-avoid">
                   <td className="py-3 pr-4 font-medium text-ink print:text-ink">{ruleName(criterion.id)}</td>
                   <td className="py-3 pr-4">
                     <Tag variant={isTimeGated ? "amber" : "neutral"}>
